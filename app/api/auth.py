@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, Request, Response, Form, Header
+from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import Optional
 from app.db.database import get_db
 from app.db.models import User
 from app.core.firebase import verify_token, get_current_user_from_cookie
@@ -62,18 +61,6 @@ async def login_json(
 ):
     """ログイン処理 (JSON形式) - Next.js用"""
     return await process_login(request.id_token, response, db)
-
-
-@router.post("/login/form")
-async def login_form(
-    response: Response,
-    id_token: str = Form(...),
-    db: Session = Depends(get_db),
-):
-    """ログイン処理 (Form形式) - HTMX用"""
-    result = await process_login(id_token, response, db)
-    response.headers["HX-Redirect"] = result["redirect_url"]
-    return result
 
 
 @router.post("/logout")
