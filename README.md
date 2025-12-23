@@ -4,6 +4,12 @@ Firebase Authenticationを使用したログイン/ログアウト機能を持�
 
 ## 技術スタック
 
+### フロントエンド
+- **Next.js 16** - Reactフレームワーク
+- **TypeScript** - 型安全な開発
+- **Tailwind CSS** - ユーティリティファーストCSS
+- **Firebase SDK** - クライアント側認証
+
 ### バックエンド
 - **Python 3.12**
 - **FastAPI** - 高速なWebフレームワーク
@@ -15,36 +21,58 @@ Firebase Authenticationを使用したログイン/ログアウト機能を持�
 - **PostgreSQL 16** - リレーショナルデータベース
 
 ### 認証
-- **Firebase Authentication** - Google認証等のソーシャルログイン
-
-### フロントエンド
-- **Jinja2** - テンプレートエンジン
-- **HTMX** - 動的なHTML更新
+- **Firebase Authentication** - メール/パスワード認証
 
 ### インフラ
 - **Docker** - コンテナ化
 - **Docker Compose** - マルチコンテナ管理
 
+## アーキテクチャ
+
+フロントエンドとバックエンドを分離した構成:
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Frontend      │     │   Backend       │     │   Database      │
+│   (Next.js)     │────▶│   (FastAPI)     │────▶│   (PostgreSQL)  │
+│   :3000         │     │   :8000         │     │   :5432         │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│   Firebase      │
+│   Auth          │
+└─────────────────┘
+```
+
 ## プロジェクト構成
 
 ```
 firebase-auth-app/
-├── app/
-│   ├── api/          # APIエンドポイント
-│   │   ├── auth.py   # 認証API
-│   │   └── pages.py  # ページルーティング
-│   ├── core/         # コア設定
-│   │   ├── config.py # 環境設定
-│   │   └── firebase.py # Firebase初期化
-│   ├── db/           # データベース
-│   │   ├── database.py # DB接続
-│   │   └── models.py # モデル定義
-│   ├── static/       # 静的ファイル
-│   ├── templates/    # HTMLテンプレート
-│   └── main.py       # アプリケーションエントリーポイント
-├── docker-compose.yml
-├── Dockerfile
-└── requirements.txt
+├── app/                    # バックエンド (FastAPI)
+│   ├── api/
+│   │   └── auth.py         # 認証API
+│   ├── core/
+│   │   ├── config.py       # 環境設定
+│   │   └── firebase.py     # Firebase初期化
+│   ├── db/
+│   │   ├── database.py     # DB接続
+│   │   └── models.py       # モデル定義
+│   ├── main.py             # アプリケーションエントリーポイント
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/               # フロントエンド (Next.js)
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── page.tsx        # ログインページ
+│   │   │   └── dashboard/
+│   │   │       └── page.tsx    # ダッシュボード
+│   │   ├── components/     # UIコンポーネント
+│   │   ├── contexts/       # React Context
+│   │   └── lib/            # ユーティリティ
+│   ├── Dockerfile
+│   └── package.json
+└── docker-compose.yml
 ```
 
 ## セットアップ
@@ -71,11 +99,13 @@ Firebase Admin SDKのサービスアカウントキー（JSONファイル）を�
 docker-compose up --build
 ```
 
-アプリケーションは http://localhost:8000 で起動します。
+- フロントエンド: http://localhost:3000
+- バックエンドAPI: http://localhost:8000
 
 ## 機能
 
-- Googleアカウントでのログイン
+- メール/パスワードでのログイン
+- 新規ユーザー登録
 - ログイン状態の保持（Cookie）
 - ユーザー情報のデータベース保存
 - ダッシュボード表示
@@ -85,8 +115,6 @@ docker-compose up --build
 
 | エンドポイント | メソッド | 説明 |
 |---------------|---------|------|
-| `/` | GET | ログインページ |
-| `/dashboard` | GET | ダッシュボード |
-| `/auth/login` | POST | ログイン処理 |
+| `/auth/login` | POST | ログイン処理 (JSON) |
 | `/auth/logout` | POST | ログアウト処理 |
 | `/auth/me` | GET | 現在のユーザー情報取得 |
