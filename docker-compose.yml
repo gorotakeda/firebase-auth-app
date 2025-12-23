@@ -1,6 +1,9 @@
 services:
-  app:
-    build: .
+  # FastAPI バックエンド
+  api:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
     ports:
       - "8000:8000"
     volumes:
@@ -10,9 +13,26 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/auth_db
       - GOOGLE_APPLICATION_CREDENTIALS=/app/fir-auth-app-5db66-firebase-adminsdk-fbsvc-d0e970d08c.json
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - FRONTEND_URL=http://localhost:3000
     depends_on:
       db:
         condition: service_healthy
+
+  # Next.js フロントエンド
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=fir-auth-app-5db66.firebaseapp.com
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=fir-auth-app-5db66
+    depends_on:
+      - api
 
   db:
     image: postgres:16-alpine

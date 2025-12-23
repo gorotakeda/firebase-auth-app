@@ -1,7 +1,8 @@
+import os
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from app.api import auth, pages
+from app.api import auth
 from app.db.database import engine, Base
 
 
@@ -20,9 +21,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 静的ファイル
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# CORS設定
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        os.getenv("FRONTEND_URL", "http://localhost:3000"),
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ルーター登録
 app.include_router(auth.router)
-app.include_router(pages.router)
