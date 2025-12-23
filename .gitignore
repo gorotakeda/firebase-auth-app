@@ -1,0 +1,15 @@
+# 環境変数
+.env
+
+# Firebase認証情報（絶対にコミットしない）
+fir-auth-app-5db66-firebase-adminsdk-fbsvc-d0e970d08c.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/

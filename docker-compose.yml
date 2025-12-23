@@ -1,0 +1,34 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./fir-auth-app-5db66-firebase-adminsdk-fbsvc-d0e970d08c.json:/app/fir-auth-app-5db66-firebase-adminsdk-fbsvc-d0e970d08c.json:ro
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/auth_db
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/fir-auth-app-5db66-firebase-adminsdk-fbsvc-d0e970d08c.json
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=auth_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

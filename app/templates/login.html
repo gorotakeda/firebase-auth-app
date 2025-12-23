@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}ログイン - Firebase Auth App{% endblock %}
+
+{% block extra_head %}
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>🔐 ログイン</h1>
+
+<div id="error-message" class="error" style="display: none;"></div>
+
+<div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p style="margin-top: 10px; color: #666;">認証中...</p>
+</div>
+
+<form id="login-form">
+    <div class="form-group">
+        <label for="email">メールアドレス</label>
+        <input type="email" id="email" name="email" required placeholder="example@email.com">
+    </div>
+    <div class="form-group">
+        <label for="password">パスワード</label>
+        <input type="password" id="password" name="password" required placeholder="パスワード">
+    </div>
+    <button type="submit" class="btn btn-primary">ログイン</button>
+</form>
+
+<div class="divider">または</div>
+
+<button id="register-btn" class="btn btn-secondary">新規登録</button>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Firebase設定
+    const firebaseConfig = {
+        apiKey: "{{ firebase_api_key }}",
+        authDomain: "fir-auth-app-5db66.firebaseapp.com",
+        projectId: "fir-auth-app-5db66",
+        storageBucket: "fir-auth-app-5db66.firebasestorage.app",
+        messagingSenderId: "505869037520",
+        appId: "1:505869037520:web:33078404c2250661b953d5",
+        measurementId: "G-F8BT2PM0N3"
+    };
+
+    // Firebase初期化
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const loginForm = document.getElementById('login-form');
+    const registerBtn = document.getElementById('register-btn');
+    const errorMessage = document.getElementById('error-message');
+    const loading = document.getElementById('loading');
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+    }
+
+    function hideError() {
+        errorMessage.style.display = 'none';
+    }
+
+    function showLoading() {
+        loading.classList.add('active');
+        loginForm.style.display = 'none';
+        registerBtn.style.display = 'none';
+    }
+
+    function hideLoading() {
+        loading.classList.remove('active');
+        loginForm.style.display = 'block';
+        registerBtn.style.display = 'block';
+    }
+
+    async function sendTokenToServer(idToken) {
+        const formData = new FormData();
+        formData.append('id_token', idToken);
+
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (response.ok) {
+            const redirectUrl = response.headers.get('HX-Redirect');
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+        } else {
+            const data = await response.json();
+            throw new Error(data.detail || 'サーバーエラーが発生しました');
+        }
+    }
+
+    // ログイン処理
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideError();
+        showLoading();
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            const idToken = await userCredential.user.getIdToken();
+            await sendTokenToServer(idToken);
+        } catch (error) {
+            hideLoading();
+            console.error('Login error:', error);
+
+            let message = 'ログインに失敗しました';
+            switch (error.code) {
+                case 'auth/user-not-found':
+                    message = 'ユーザーが見つかりません';
+                    break;
+                case 'auth/wrong-password':
+                    message = 'パスワードが正しくありません';
+                    break;
+                case 'auth/invalid-email':
+                    message = 'メールアドレスの形式が正しくありません';
+                    break;
+                case 'auth/too-many-requests':
+                    message = 'ログイン試行回数が多すぎます。しばらく待ってからお試しください';
+                    break;
+            }
+            showError(error.message || message);
+        }
+    });
+
+    // 新規登録処理
+    registerBtn.addEventListener('click', async () => {
+        hideError();
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        if (!email || !password) {
+            showError('メールアドレスとパスワードを入力してください');
+            return;
+        }
+
+        if (password.length < 6) {
+            showError('パスワードは6文字以上で入力してください');
+            return;
+        }
+
+        showLoading();
+
+        try {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const idToken = await userCredential.user.getIdToken();
+            await sendTokenToServer(idToken);
+        } catch (error) {
+            hideLoading();
+            console.error('Register error:', error);
+
+            let message = '登録に失敗しました';
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    message = 'このメールアドレスは既に使用されています';
+                    break;
+                case 'auth/weak-password':
+                    message = 'パスワードが弱すぎます';
+                    break;
+                case 'auth/invalid-email':
+                    message = 'メールアドレスの形式が正しくありません';
+                    break;
+            }
+            showError(error.message || message);
+        }
+    });
+</script>
+{% endblock %}￥
